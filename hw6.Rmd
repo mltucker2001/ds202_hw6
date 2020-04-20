@@ -1,0 +1,142 @@
+---
+title: "Homework 6"
+author: "Meredith Tucker (mltucker2001)"
+date: "4/15/20"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tidyverse)
+library(grid)
+```
+
+## Top dogs
+
+In this homework, you will try to reproduce the fantastic infographic for [top dogs](https://informationisbeautiful.net/visualizations/best-in-show-whats-the-top-data-dog/), originally produced by David McCandless. The raw data can be found [here](https://docs.google.com/spreadsheets/d/1l_HfF5EaN-QgnLc2UYdCc7L2CVrk0p3VdGB1godOyhk/edit#gid=10). You can download this file by File -- Download As -- Microsoft Excel (.xlsx).
+
+**Submission instructions**: Create a folder named `ds202_hw6`, and name the RMarkDown file including your solutions `hw6.Rmd` under this folder. For the submission, create a GitHub repository named `ds202_hw6` under your GitHub account, and push both `hw6.Rmd` and the knitted `hw6.html` before the deadline. I will assume you use the same GitHub username as for your HW5 submission. The latest version of your homework appearing on GitHub before the deadline is graded. *It is crucial to follow the exact folder structure and file names*, so that your homework can be reproduced and graded by an automated script. This homework is **due on April 22** before class.
+
+1. Import the data and clean appropriately. To read in the data, you can use `readxl::read_xlsx('fileNameHere', sheet='sheetNameHere')`. Required data are in the sheets `Best in show` and `Best in show full sheet`. Take extra care on the column names and the first few rows of the data frame after read in.
+
+```{r}
+
+best <- readxl::read_xlsx("KIB - Best in Show (public).xlsx",
+                  sheet='Best in show')
+
+
+bestful <- readxl::read_xlsx("KIB - Best in Show (public).xlsx",
+                  sheet='Best in show full sheet')
+
+  
+  
+bestful1 <- bestful[-c(1,3), -c(2, 4, 9, 10, 14, 16, 18, 20 ) ]
+
+bestful2 <- bestful1 %>% rename('Breed' = 'Best in show?',
+                    'Type' = 'largest value',
+                    'datadog score' = 3,
+                    'Popularity' = '160',
+                    'Intelligence Category' = 33,
+                    'Size' = 24)
+bestful2 <- bestful2 %>% 
+  select('Breed', 'Type', 'datadog score', 'Popularity',  'Intelligence Category', 'Size')
+bestfull <- bestful2[-c(1), ]
+Bestfull <- na.omit(bestfull)
+
+
+best1 <- best[-c(1,2,3), ]
+
+
+
+
+```
+
+
+
+2. Create a graphics similar to the  [top dogs](https://informationisbeautiful.net/visualizations/best-in-show-whats-the-top-data-dog/) figure. Your figure needs to display the following information with appropriate plotting elements:
+
+- breed of dog
+- type of dog (work, toy, etc.)
+- size of dog
+- data score 
+- popularity
+- intelligence of the dog
+- appropriate legends & explanation
+
+Hints and Notes:
+
+- The breed of dog can be displayed without the silhouttes (text only is fine)
+- Avoid (too much) overlaps!
+- Choose a good color scheme.
+- Your submission is supposed to be fully reproducible, i.e. the TA and I will 'knit' your submission in RStudio.
+
+
+```{r}
+# Changing intelligence levels to clever and dumb
+unique(Bestfull$'Intelligence Category')
+
+Bestfull <- Bestfull %>% 
+  mutate(Intelligence = 
+           Bestfull$'Intelligence Category' %>% str_replace(pattern = 'Brightest', replace = 'clever',.) %>% str_replace(pattern = 'Above average', replace = 'clever',.) %>% 
+           str_replace(pattern = 'Excellent', replace = 'clever',.) %>% 
+           str_replace(pattern = 'Average', replace = 'dumb',.) %>% 
+           str_replace(pattern = 'Fair', replace = 'dumb',.) %>% 
+           str_replace(pattern = 'Lowest', replace = 'dumb',.))
+
+
+# Changing data types
+
+Bestfull$Popularity <- as.numeric(Bestfull$Popularity)
+Bestfull$`datadog score` <- as.numeric(Bestfull$`datadog score`)
+Bestfull$Size <- as.factor(Bestfull$Size)
+Bestfull$Type <- as.factor(Bestfull$Type)
+
+Bestfull$Size <- factor(Bestfull$Size, levels=rev(levels(Bestfull$Size)))
+
+# Color for type
+# Shape for Intelligence
+# Size for size
+
+```
+
+
+
+
+Trying to graph
+
+```{r}
+
+thing1 <- Bestfull %>% 
+  group_by(Breed) %>% 
+  ggplot(aes(x= `datadog score`, y= Popularity, color=Type, label=Breed)) +
+  geom_text(size=2,hjust=1, vjust=1, check_overlap=TRUE) +
+  geom_point(aes(size = Size, shape=Intelligence), alpha=0.6) +
+  scale_color_brewer(palette='Set2')+
+  scale_size_manual(values=c(3,4,5)) +
+  scale_shape_manual(values=c(15,17)) +
+  labs(title = 'Best in Show: Ultimate Datadog') +
+  geom_hline(yintercept=80) +
+  geom_vline(xintercept=2.325) +
+  xlab('Popularity') +
+  scale_y_reverse() +
+  theme_bw() +
+  theme(panel.grid.major = element_blank(),
+               panel.grid.minor = element_blank(),
+               panel.border = element_blank(),
+               axis.text = element_blank(),
+               axis.title.x = element_text(family='serif', face='bold'),
+               axis.ticks = element_blank(),
+               axis.title.y = element_blank(),
+               plot.title=element_text(family="serif", face="bold")) +
+  annotate(geom='text', x=1.3, y=1, label='Overrated', size=4.5, family="serif") +
+  annotate(geom='text', x=3.4, y=1, label='Hot Dogs!', size=4.5, family='serif') +
+  annotate(geom='text', x=1.3, y=170, label='Rightly Ignored', size=4.5, family='serif') +
+  annotate(geom='text', x=3.4, y=170, label='Overlooked', size=4.5, family='serif')
+
+thing1
+
+
+```
+
